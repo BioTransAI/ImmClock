@@ -1,59 +1,38 @@
 # Imm-PathwayAge
 
-**Manuscript analysis code** · R · Single integrated script
+Imm-PathwayAge estimates immune age from plasma proteins organised into biological pathways. It combines pathway-specific age predictions into an integrated clock, while retaining pathway-level age estimates. This repository contains the R analyses for model development, associations with disease and mortality, and validation in independent cohorts.
 
-Analyses correspond to the current manuscript and its supplementary figures
-and tables. All results remain in R objects; visualization and publication-file
-exports are excluded.
+## Analysis overview
 
-## Analysis map
+The workflow begins with the definition of immune pathways from Reactome v97 and their annotation into eight functional classes. A two-stage model combines the resulting pathway clocks. Model development uses an 80:20 training–test split and five-fold outer and inner cross-validation; prediction metrics are accompanied by confidence intervals from 2,000 bootstrap resamples.
 
-| Module | Retained analyses | Manuscript location |
-|:--|:--|:--|
-| **Immune pathways** | Reactome v97 selection, redundancy filtering and eight-class annotation | Figure 1; Table S2 |
-| **Clock development** | Two-stage models, nested cross-validation, held-out evaluation and full-cohort cross-fitting | Figure 2; Table S3 |
-| **Pathway contributions** | Additive contributions, category allocation, protein-count correlation and shared proteins among the ten leading pathways | Figure 3; Figure S2; Table S4 |
-| **Disease associations** | Prevalent and incident disease, pathway follow-up, two-year landmark, category composition and association breadth | Figures 4–5; Tables S5–S10 |
-| **Mortality** | Cox models, two-year landmark, restricted cubic splines, ten-year absolute risks and disease–mortality pathway profiles | Figure 6; Table S11 |
-| **All-protein comparator** | A 2,920-protein clock; separate disease models and mortality spline comparisons | Figures S3–S5 |
-| **External validation** | Fixed-model prediction, pathway contributions and Chia neurological-disease associations | Figure 7; Tables S12–S15 |
+Pathway contributions describe how the component clocks contribute to the integrated age estimate and how these contributions are distributed across immune functions. UK Biobank associations use age acceleration derived from full-cohort out-of-fold predictions. Logistic and Cox regression relate age acceleration to prevalent disease, incident disease and mortality. Two-year landmark analyses, restricted cubic splines, ten-year absolute risk estimates and disease–mortality pathway profiles provide further characterisation of these associations. A clock trained on all 2,920 proteins serves as a separate comparator.
 
-## Use
+For external validation, the selected learner combination is refitted in UK Biobank using proteins shared with the Gong and Chia cohorts. Prediction performance and pathway contributions are evaluated in Gong participants and Chia healthy controls. Participants with ALS and neurological controls are each compared with healthy controls, using age acceleration calibrated across all eligible Chia participants.
 
-Load `Imm_PathwayAge_Analysis.R` into the main R session, then call
-`run_imm_pathway_analysis()` with the original study objects. Argument comments
-describe their required fields. Loading the script does not start an analysis.
-For individual module calls, first run `load_imm_pathway_packages()`.
+## Using the code
 
-Inputs include the preprocessed protein-and-age matrix, prepared covariates,
-collection and outcome dates, and Gong/Chia cohort objects. Protein KNN
-imputation and median covariate imputation are upstream requirements; their
-implementations are not reconstructed here. Previously fitted clock and
-Reactome objects may be reused. Otherwise, provide a reference-cache directory
-for the public Reactome v97 inputs. No personal file locations are embedded.
+All analyses are contained in `Imm_PathwayAge_Analysis.R`. The workflow starts from prepared protein measurements, covariates, collection and outcome dates, and external cohort data. Protein KNN imputation and median covariate imputation should follow the study preprocessing. Required input fields are documented alongside the main function.
 
-## Analysis conventions
+The example below assumes that these inputs and the Reactome pathway bundle have been loaded into R.
 
-The main clock retains the original 80:20 split, five-fold outer and inner
-cross-validation, and 2,000-resample bootstrap confidence intervals for prediction
-metrics. UK Biobank
-associations use full-cohort out-of-fold age acceleration and the manuscript's
-covariates, endpoints and multiple-testing families. External refitting uses
-the already selected learner combination; prediction is evaluated in Gong and
-Chia controls. Chia age correction pools all eligible participants before the
-two separate disease comparisons.
+```r
+source("Imm_PathwayAge_Analysis.R")
 
-Figure S1 compares literature-reported correlations and requires no additional
-participant-level model fitting. Study dimensions and numerical integrity
-checks are retained throughout the script.
+analysis <- run_imm_pathway_analysis(
+  all_data = all_data,
+  covariates = covariates,
+  blood = blood,
+  outcome_dates = outcome_dates,
+  external_cohorts = external_cohorts,
+  bundle = bundle
+)
+```
 
-## Software
+To construct the pathway bundle within the workflow, omit `bundle` and supply a `reactome_cache_dir`. A previously fitted clock can be supplied through `result`. Analysis settings are defined in `imm_pathway_config()`.
 
-R syntax requires version 4.1 or later. Packages: `data.table`, `mlr3verse`,
-`mlr3learners`, `mlr3extralearners`, `callr`, `survival`, `digest`, and the original
-learner backends `glmnet`, `LiblineaR`, `lightgbm` and `FNN`. The comparator uses
-LightGBM 4.0 or later. `parallel` is included with R; `parallelly` and
-`RhpcBLASctl` are optional.
+The returned `analysis` object contains model results, pathway annotations and contributions, clinical associations, external validation results and session information. Results remain available in R for inspection and further use.
 
-The returned object contains the analysis results and session information.
-Reproduction requires the original study inputs and computational environment.
+## Software requirements
+
+The script requires R 4.1 or later, with `data.table`, `mlr3verse`, `mlr3learners`, `mlr3extralearners`, `callr`, `survival` and `digest`. Model fitting also uses `glmnet`, `LiblineaR`, `lightgbm` and `FNN`; the all-protein comparator requires LightGBM 4.0 or later. Parallel processing uses the R `parallel` package, with optional support from `parallelly` and `RhpcBLASctl`.
