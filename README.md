@@ -1,37 +1,36 @@
 # Imm-PathwayAge
 
-Imm-PathwayAge estimates immune age from plasma proteins organised into biological pathways. It combines pathway-specific age predictions into an integrated clock, while retaining pathway-level age estimates. This repository contains the R analyses for model development, associations with disease and mortality, and validation in independent cohorts.
+Imm-PathwayAge estimates immune age from plasma proteins organised into biological pathways. It combines pathway-specific age predictions into an integrated clock, allowing immune ageing to be examined both overall and within individual pathways. The analyses are organised into seven modules within a single R script.
 
-## Analysis overview
+## Analysis modules
 
-The workflow begins with the definition of immune pathways from Reactome v97 and their annotation into eight functional classes. A two-stage model combines the resulting pathway clocks. Model development uses an 80:20 training–test split and five-fold outer and inner cross-validation; prediction metrics are accompanied by confidence intervals from 2,000 bootstrap resamples.
+### 1. Immune pathway definition
 
-Pathway contributions describe how the component clocks contribute to the integrated age estimate and how these contributions are distributed across immune functions. UK Biobank associations use age acceleration derived from full-cohort out-of-fold predictions. Logistic and Cox regression relate age acceleration to prevalent disease, incident disease and mortality. Two-year landmark analyses, restricted cubic splines, ten-year absolute risk estimates and disease–mortality pathway profiles provide further characterisation of these associations. A clock trained on all 2,920 proteins serves as a separate comparator.
+Immune pathways are curated from Reactome v97, filtered for protein coverage and redundancy, and grouped into eight functional classes. The resulting pathway definitions provide the biological basis for model development and interpretation.
 
-For external validation, the selected learner combination is refitted in UK Biobank using proteins shared with the Gong and Chia cohorts. Prediction performance and pathway contributions are evaluated in Gong participants and Chia healthy controls. Participants with ALS and neurological controls are each compared with healthy controls, using age acceleration calibrated across all eligible Chia participants.
+### 2. Clock development and evaluation
 
-## Using the code
+A two-stage model integrates pathway-specific age predictions into Imm-PathwayAge. Model selection uses five-fold outer and inner cross-validation within an 80:20 training–test split. Held-out prediction performance is summarised by MAE, RMSE and Pearson correlation, with confidence intervals from 2,000 bootstrap resamples.
 
-All analyses are contained in `Imm_PathwayAge_Analysis.R`. The workflow starts from prepared protein measurements, covariates, collection and outcome dates, and external cohort data. Protein KNN imputation and median covariate imputation should follow the study preprocessing. Required input fields are documented alongside the main function.
+### 3. Pathway contributions
 
-The example below assumes that these inputs and the Reactome pathway bundle have been loaded into R.
+Additive contributions quantify the role of each pathway in the integrated age estimate and their distribution across immune functions. Further analyses examine the relationship between protein count and pathway contribution, together with shared proteins among the ten leading pathways.
 
-```r
-source("Imm_PathwayAge_Analysis.R")
+### 4. Disease associations
 
-analysis <- run_imm_pathway_analysis(
-  all_data = all_data,
-  covariates = covariates,
-  blood = blood,
-  outcome_dates = outcome_dates,
-  external_cohorts = external_cohorts,
-  bundle = bundle
-)
-```
+Logistic and Cox regression assess associations with prevalent and incident disease. UK Biobank age acceleration is defined by standardised residuals of full-cohort out-of-fold predicted age regressed on chronological age. Pathway-level associations, two-year landmark analyses and disease-category summaries characterise the patterns across clinical outcomes.
 
-To construct the pathway bundle within the workflow, omit `bundle` and supply a `reactome_cache_dir`. A previously fitted clock can be supplied through `result`. Analysis settings are defined in `imm_pathway_config()`.
+### 5. Mortality analyses
 
-The returned `analysis` object contains model results, pathway annotations and contributions, clinical associations, external validation results and session information. Results remain available in R for inspection and further use.
+Cox models evaluate associations with all-cause mortality, including a two-year landmark analysis. Restricted cubic splines describe nonlinear associations, while ten-year absolute risk estimates aid interpretation. Disease–mortality comparisons examine similarities in the corresponding pathway association profiles.
+
+### 6. All-protein comparison
+
+A clock trained on all 2,920 proteins provides a comparator for Imm-PathwayAge. Separate disease models and mortality spline analyses compare their associations under the same outcome definitions and covariate adjustment.
+
+### 7. External validation
+
+The selected learner combination is refitted in UK Biobank using proteins shared with the Gong and Chia cohorts. Prediction performance and pathway contributions are evaluated in Gong participants and Chia healthy controls. Within Chia, participants with ALS and neurological controls are each compared with healthy controls after age acceleration is calibrated across all eligible participants.
 
 ## Software requirements
 
